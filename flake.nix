@@ -28,6 +28,8 @@
           clippy
           cargo
           jq
+          openssl
+          pkg-config
         ]);
       }));
 
