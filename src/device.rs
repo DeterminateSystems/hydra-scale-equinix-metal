@@ -61,6 +61,8 @@ pub async fn create_device(
     equinix_auth_token: &str,
     equinix_project_id: &str,
     plan: HardwarePlan,
+    tags: &Vec<String>,
+    facilities: &Vec<String>,
 ) -> Result<Device> {
     let raw = http_client
         .post(format!(
@@ -75,17 +77,8 @@ pub async fn create_device(
             plan: plan.plan,
             spot_instance: true,
             spot_price_max: plan.bid,
-            tags: vec![
-                "terraform-packet-nix-builder".to_string(),
-                "hydra".to_string(),
-            ],
-            facility: [
-                "am6", "da11", "da6", "dc10", "dc13", "fr2", "fr8", "la4", "ny5", "ny7", "se4",
-                "sv15", "sv16",
-            ]
-            .into_iter()
-            .map(|x| x.to_owned())
-            .collect(),
+            tags: tags.clone(),
+            facility: facilities.clone(),
         })
         .header(ACCEPT, "application/json")
         .header(CONTENT_TYPE, "application/json")
@@ -146,9 +139,13 @@ pub async fn destroy_device(
     }
 }
 
-pub async fn get_current_jobs(http_client: &reqwest::Client, device: &Device) -> Result<u64> {
+pub async fn get_current_jobs(
+    http_client: &reqwest::Client,
+    device: &Device,
+    prometheus_root: &str,
+) -> Result<u64> {
     let url = format!(
-        "https://status.nixos.org/prometheus/api/v1/query?query=hydra_machine_current_jobs{{host=%22root@{shortid}.packethost.net%22}}",
+        "{prometheus_root}/api/v1/query?query=hydra_machine_current_jobs{{host=%22root@{shortid}.packethost.net%22}}",
         shortid=device.short_id
     );
 

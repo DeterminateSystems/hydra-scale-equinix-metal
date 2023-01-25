@@ -33,7 +33,11 @@ pub struct HardwareCategory {
     pub plans: Vec<HardwarePlan>,
 }
 
-pub async fn get_desired_hardware(http_client: &reqwest::Client) -> Result<Vec<HardwarePlan>> {
+pub async fn get_desired_hardware(
+    http_client: &reqwest::Client,
+    hydra_root: &str,
+) -> Result<Vec<HardwarePlan>> {
+    // TODO: make this configurable
     let hardware_map: HashMap<(System, JobSize), HardwareCategory> = HashMap::from([
     (
         (System("aarch64-linux".into()), JobSize::Small),
@@ -104,7 +108,7 @@ pub async fn get_desired_hardware(http_client: &reqwest::Client) -> Result<Vec<H
 ]);
 
     let status = http_client
-        .get("https://hydra.nixos.org/queue-runner-status")
+        .get(format!("{hydra_root}/queue-runner-status"))
         .header(ACCEPT, "application/json")
         .send()
         .await?
