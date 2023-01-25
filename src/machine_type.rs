@@ -10,17 +10,16 @@ pub struct MachineType(String);
 
 impl MachineType {
     pub fn system(&self) -> System {
-        System(self.0.split(":").next().unwrap().to_string())
+        System(self.0.split(':').next().unwrap().to_string())
     }
 
     pub fn features(&self) -> Vec<Feature> {
         self.0
-            .split(":")
-            .skip(1)
-            .next()
+            .split(':')
+            .nth(1)
             .unwrap_or("")
-            .split(",")
-            .filter(|x| *x != "")
+            .split(',')
+            .filter(|x| !x.is_empty())
             .map(|x| x.to_string())
             .map(Feature)
             .collect()
@@ -28,9 +27,9 @@ impl MachineType {
 
     pub fn get_job_size(&self) -> JobSize {
         if self.features().contains(&Feature("big-parallel".into())) {
-            return JobSize::BigParallel;
+            JobSize::BigParallel
         } else {
-            return JobSize::Small;
+            JobSize::Small
         }
     }
 }

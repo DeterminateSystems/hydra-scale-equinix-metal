@@ -165,7 +165,7 @@ async fn get_desired_hardware(http_client: &reqwest::Client) -> Result<Vec<Hardw
         }
     }
 
-    return Ok(desired_hardware);
+    Ok(desired_hardware)
 }
 
 #[tokio::main]
@@ -242,7 +242,7 @@ async fn main() -> Result<()> {
             let mut tags = device.tags.clone();
             tags.push("skip-hydra".to_string());
 
-            device::add_device_tag(&http_client, &equinix_auth_token, &device, tags).await?;
+            device::add_device_tag(&http_client, &equinix_auth_token, device, tags).await?;
         }
     }
 
@@ -251,7 +251,7 @@ async fn main() -> Result<()> {
             println!("Disregarding the device's in progress jobs: it has exceeded the urgent termination date");
             0
         } else {
-            device::get_current_jobs(&http_client, &device).await?
+            device::get_current_jobs(&http_client, device).await?
         };
 
         if jobs == 0 {
@@ -259,13 +259,13 @@ async fn main() -> Result<()> {
                 println!("Would destroy but it isn't active ({:?})", device.state);
             } else {
                 println!("Destroying...");
-                device::destroy_device(&http_client, &equinix_auth_token, &device).await?;
+                device::destroy_device(&http_client, &equinix_auth_token, device).await?;
             }
         }
     }
 
     for dev in to_delete.iter() {
-        let jobs = device::get_current_jobs(&http_client, &dev).await?;
+        let jobs = device::get_current_jobs(&http_client, dev).await?;
 
         println!(
             "-{} {} jobs {} {:?}",
@@ -273,7 +273,7 @@ async fn main() -> Result<()> {
         );
     }
     for dev in to_keep.iter() {
-        let jobs = device::get_current_jobs(&http_client, &dev).await?;
+        let jobs = device::get_current_jobs(&http_client, dev).await?;
 
         println!(
             " {} {} jobs {} {:?}",
@@ -284,5 +284,5 @@ async fn main() -> Result<()> {
         println!("+-------- 0 jobs {} {:?}", dev.plan, dev.netboot_url);
     }
 
-    return Ok(());
+    Ok(())
 }

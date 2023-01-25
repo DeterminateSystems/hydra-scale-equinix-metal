@@ -70,7 +70,7 @@ pub async fn create_device(
         .json(&CreateDeviceRequest {
             always_pxe: true,
             hostname: plan.plan.clone(),
-            ipxe_script_url: plan.netboot_url.into(),
+            ipxe_script_url: plan.netboot_url,
             operating_system: "custom_ipxe".into(),
             plan: plan.plan,
             spot_instance: true,
@@ -140,7 +140,7 @@ pub async fn destroy_device(
         .await?;
 
     if raw.status().is_success() {
-        return Ok(());
+        Ok(())
     } else {
         return Err(eyre!(raw.json::<serde_json::Value>().await?));
     }
@@ -240,5 +240,5 @@ pub async fn get_all_devices(
         all_devices.extend(devices.devices);
     }
 
-    return Ok(all_devices);
+    Ok(all_devices)
 }
