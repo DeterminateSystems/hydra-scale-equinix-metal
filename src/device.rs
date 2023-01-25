@@ -5,7 +5,7 @@ use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
-use crate::HardwarePlan;
+use crate::hardware::HardwarePlan;
 
 #[derive(Deserialize, Debug)]
 pub struct Plan {

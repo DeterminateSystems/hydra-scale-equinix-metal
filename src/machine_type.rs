@@ -1,6 +1,13 @@
 use serde::Deserialize;
 
-use crate::{JobSize, System};
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum JobSize {
+    Small,
+    BigParallel,
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub struct System(pub String);
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Feature(String);
