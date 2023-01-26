@@ -1,5 +1,6 @@
 use std::cmp::max;
 use std::collections::HashMap;
+use std::path::Path;
 
 use eyre::Result;
 use reqwest::header::ACCEPT;
@@ -18,14 +19,14 @@ pub struct QueueRunnerStatus {
     machine_types: HashMap<MachineType, MachineTypeStatus>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct HardwarePlan {
     pub bid: f64,
     pub plan: String,
     pub netboot_url: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct HardwareCategory {
     pub divisor: usize,
     #[allow(dead_code)] // "field `minimum` is never read"
@@ -33,76 +34,26 @@ pub struct HardwareCategory {
     pub plans: Vec<HardwarePlan>,
 }
 
-fn get_hardware_category(system: System, job_size: JobSize) -> Option<HardwareCategory> {
-    let category = match (system, job_size) {
-        (System(system), JobSize::Small) => match system.as_ref() {
-            "aarch64-linux" => HardwareCategory {
-                divisor: 2000,
-                minimum: 1,
-                plans: vec![HardwarePlan {
-                    bid: 2.0,
-                    plan: "c3.large.arm64".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm".into(),
-                }],
-            },
-            "x86_64-linux" => HardwareCategory {
-                divisor: 2000,
-                minimum: 1,
-                plans: vec![
-                    HardwarePlan {
-                        bid: 2.0,
-                        plan: "c3.medium.x86".into(),
-                        netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86".into(),
-                    },
-                    HardwarePlan {
-                        bid: 2.0,
-                        plan: "m3.large.x86".into(),
-                        netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86".into(),
-                    },
-                ],
-            },
-            _ => return None,
-        },
-        (System(system), JobSize::BigParallel) => match system.as_ref() {
-            "aarch64-linux" => HardwareCategory {
-                divisor: 2000,
-                minimum: 1,
-                plans: vec![HardwarePlan {
-                    bid: 2.0,
-                    plan: "c3.large.arm64".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm--big-parallel"
-                        .into(),
-                }],
-            },
-            "x86_64-linux" => HardwareCategory {
-                divisor: 2000,
-                minimum: 1,
-                plans: vec![
-                    HardwarePlan {
-                        bid: 2.0,
-                        plan: "c3.medium.x86".into(),
-                        netboot_url:
-                            "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86--big-parallel".into(),
-                    },
-                    HardwarePlan {
-                        bid: 2.0,
-                        plan: "m3.large.x86".into(),
-                        netboot_url:
-                            "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86--big-parallel".into(),
-                    },
-                ],
-            },
-            _ => return None,
-        },
-    };
+type CategoryMap = HashMap<System, HashMap<JobSize, HardwareCategory>>;
 
-    Some(category)
+pub fn parse_categories_file(file: &Path) -> Result<CategoryMap> {
+    #[derive(Deserialize)]
+    struct Config {
+        category: CategoryMap,
+    }
+
+    let toml_str = std::fs::read_to_string(file)?;
+    let config: Config = toml::from_str(&toml_str)?;
+
+    Ok(config.category)
 }
 
 pub async fn get_desired_hardware(
     http_client: &reqwest::Client,
     hydra_root: &str,
+    categories_file: &Path,
 ) -> Result<Vec<HardwarePlan>> {
+    let categories = parse_categories_file(categories_file)?;
     let status = http_client
         .get(format!("{hydra_root}/queue-runner-status"))
         .header(ACCEPT, "application/json")
@@ -133,7 +84,7 @@ pub async fn get_desired_hardware(
     let mut desired_hardware: Vec<HardwarePlan> = vec![];
     for (system, sizes) in buckets.iter() {
         for (size, runnable) in sizes.iter() {
-            if let Some(category) = get_hardware_category(system.clone(), size.clone()) {
+            if let Some(category) = categories.get(&system).and_then(|e| e.get(&size)) {
                 let wanted = max(1, runnable / category.divisor);
                 if category.plans.is_empty() {
                     println!(

@@ -1,12 +1,14 @@
 use serde::Deserialize;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum JobSize {
     Small,
     BigParallel,
 }
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Deserialize)]
+#[serde(transparent)]
 pub struct System(pub String);
 
 #[derive(Debug, Eq, PartialEq)]

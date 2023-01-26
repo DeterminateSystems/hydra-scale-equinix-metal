@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 use eyre::Result;
 use time::OffsetDateTime;
@@ -25,6 +27,10 @@ struct Cli {
     /// The root of the Prometheus server that contains information about Hydra machines.
     #[clap(long, default_value = "https://status.nixos.org/prometheus")]
     prometheus_root: String,
+
+    /// A TOML description of machines and their Nix system types and job sizes.
+    #[clap(long, required = true)]
+    categories_file: PathBuf,
 }
 
 #[tokio::main]
@@ -43,6 +49,7 @@ async fn main() -> Result<()> {
         args.facilities,
         args.hydra_root,
         args.prometheus_root,
+        args.categories_file,
     )
     .await
 }
@@ -54,6 +61,7 @@ async fn real_main(
     facilities: Vec<String>,
     hydra_root: String,
     prometheus_root: String,
+    categories_file: PathBuf,
 ) -> Result<()> {
     let older_than = OffsetDateTime::now_utc() - time::Duration::DAY;
     let urgently_terminate = older_than - time::Duration::DAY;
@@ -69,7 +77,8 @@ async fn real_main(
         | jq -c '.devices[] | { id, short_id }'
     */
 
-    let mut desired_hardware = hardware::get_desired_hardware(&http_client, &hydra_root).await?;
+    let mut desired_hardware =
+        hardware::get_desired_hardware(&http_client, &hydra_root, &categories_file).await?;
 
     let mut all_devices: Vec<device::Device> =
         device::get_all_devices(&http_client, &equinix_auth_token, &equinix_project_id)
