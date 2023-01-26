@@ -33,7 +33,14 @@
 
       packages = forAllSystems
         ({ system, pkgs, ... }: {
-          package = pkgs.hello;
+          default = pkgs.rustPlatform.buildRustPackage {
+            pname = "scale";
+            version = "0.0.0";
+
+            src = ./.;
+
+            cargoLock.lockFile = ./Cargo.lock;
+          };
         });
     };
 }
