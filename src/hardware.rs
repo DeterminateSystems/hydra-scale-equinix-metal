@@ -33,80 +33,76 @@ pub struct HardwareCategory {
     pub plans: Vec<HardwarePlan>,
 }
 
+fn get_hardware_category(system: System, job_size: JobSize) -> Option<HardwareCategory> {
+    let category = match (system, job_size) {
+        (System(system), JobSize::Small) => match system.as_ref() {
+            "aarch64-linux" => HardwareCategory {
+                divisor: 2000,
+                minimum: 1,
+                plans: vec![HardwarePlan {
+                    bid: 2.0,
+                    plan: "c3.large.arm64".into(),
+                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm".into(),
+                }],
+            },
+            "x86_64-linux" => HardwareCategory {
+                divisor: 2000,
+                minimum: 1,
+                plans: vec![
+                    HardwarePlan {
+                        bid: 2.0,
+                        plan: "c3.medium.x86".into(),
+                        netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86".into(),
+                    },
+                    HardwarePlan {
+                        bid: 2.0,
+                        plan: "m3.large.x86".into(),
+                        netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86".into(),
+                    },
+                ],
+            },
+            _ => return None,
+        },
+        (System(system), JobSize::BigParallel) => match system.as_ref() {
+            "aarch64-linux" => HardwareCategory {
+                divisor: 2000,
+                minimum: 1,
+                plans: vec![HardwarePlan {
+                    bid: 2.0,
+                    plan: "c3.large.arm64".into(),
+                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm--big-parallel"
+                        .into(),
+                }],
+            },
+            "x86_64-linux" => HardwareCategory {
+                divisor: 2000,
+                minimum: 1,
+                plans: vec![
+                    HardwarePlan {
+                        bid: 2.0,
+                        plan: "c3.medium.x86".into(),
+                        netboot_url:
+                            "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86--big-parallel".into(),
+                    },
+                    HardwarePlan {
+                        bid: 2.0,
+                        plan: "m3.large.x86".into(),
+                        netboot_url:
+                            "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86--big-parallel".into(),
+                    },
+                ],
+            },
+            _ => return None,
+        },
+    };
+
+    Some(category)
+}
+
 pub async fn get_desired_hardware(
     http_client: &reqwest::Client,
     hydra_root: &str,
 ) -> Result<Vec<HardwarePlan>> {
-    // TODO: make this configurable
-    let hardware_map: HashMap<(System, JobSize), HardwareCategory> = HashMap::from([
-    (
-        (System("aarch64-linux".into()), JobSize::Small),
-        HardwareCategory {
-            divisor: 2000,
-            minimum: 1,
-            plans: vec![
-                HardwarePlan{
-                    bid: 2.0,
-                    plan: "c3.large.arm64".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm".into(),
-                },
-            ]
-        }
-    ),
-    (
-        (System("aarch64-linux".into()), JobSize::BigParallel),
-        HardwareCategory {
-            divisor: 2000,
-            minimum: 1,
-            plans: vec![
-                HardwarePlan{
-                    bid: 2.0,
-                    plan: "c3.large.arm64".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm--big-parallel".into(),
-                },
-            ]
-        }
-    ),
-    (
-        (System("x86_64-linux".into()), JobSize::Small),
-        HardwareCategory {
-            divisor: 2000,
-            minimum: 1,
-            plans: vec![
-                HardwarePlan{
-                    bid: 2.0,
-                    plan: "c3.medium.x86".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86".into(),
-                },
-                HardwarePlan{
-                    bid: 2.0,
-                    plan: "m3.large.x86".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86".into(),
-                }
-            ]
-        }
-    ),
-    (
-        (System("x86_64-linux".into()), JobSize::BigParallel),
-        HardwareCategory {
-            divisor: 2000,
-            minimum: 1,
-            plans: vec![
-                HardwarePlan{
-                    bid: 2.0,
-                    plan: "c3.medium.x86".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86--big-parallel".into(),
-                },
-                HardwarePlan{
-                    bid: 2.0,
-                    plan: "m3.large.x86".into(),
-                    netboot_url: "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86--big-parallel".into(),
-                }
-            ]
-        }
-    )
-]);
-
     let status = http_client
         .get(format!("{hydra_root}/queue-runner-status"))
         .header(ACCEPT, "application/json")
@@ -137,7 +133,7 @@ pub async fn get_desired_hardware(
     let mut desired_hardware: Vec<HardwarePlan> = vec![];
     for (system, sizes) in buckets.iter() {
         for (size, runnable) in sizes.iter() {
-            if let Some(category) = hardware_map.get(&(system.clone(), size.clone())) {
+            if let Some(category) = get_hardware_category(system.clone(), size.clone()) {
                 let wanted = max(1, runnable / category.divisor);
                 if category.plans.is_empty() {
                     println!(
