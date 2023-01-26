@@ -42,8 +42,8 @@ pub fn parse_categories_file(file: &Path) -> Result<CategoryMap> {
         category: CategoryMap,
     }
 
-    let toml_str = std::fs::read_to_string(file)?;
-    let config: Config = toml::from_str(&toml_str)?;
+    let json_str = std::fs::read_to_string(file)?;
+    let config: Config = serde_json::from_str(&json_str)?;
 
     Ok(config.category)
 }
