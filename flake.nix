@@ -42,5 +42,64 @@
             cargoLock.lockFile = ./Cargo.lock;
           };
         });
+
+      nixosModules.default = ({ config, lib, pkgs, ... }:
+        let
+          cfg = config.services.hsem;
+          categoriesFileFormat = pkgs.formats.json { };
+        in
+        {
+          options.services.hsem = {
+            enable = lib.mkEnableOption "hydra-scale-equinix-metal";
+
+            secretFile = lib.mkOption {
+              type = lib.types.str;
+              description = lib.mdDoc ''
+                The path to an environment file that contains METAL_AUTH_TOKEN
+                and METAL_PROJECT_ID.
+              '';
+            };
+
+            tags = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+
+            facilities = lib.mkOption {
+              type = with lib.types; listOf str;
+            };
+
+            hydraRoot = lib.mkOption {
+              type = with lib.types; nullOr str;
+              default = null;
+            };
+
+            prometheusRoot = lib.mkOption {
+              type = with lib.types; nullOr str;
+              default = null;
+            };
+
+            categories = lib.mkOption {
+              inherit (categoriesFileFormat) type;
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            systemd.services.hsem = {
+              wantedBy = [ "default.target" ];
+              after = [ "network.target" ];
+
+              script = ''
+                export $(xargs < ${cfg.secretFile})
+
+                ${self.packages.default}/bin/scale \
+                  --tags ${lib.concatStringsSep "," cfg.tags} \
+                  --facilities ${lib.concatStringsSep "," cfg.facilities} \
+                  ${lib.optionalString (cfg.hydraRoot != null) "--hydra-root ${cfg.hydraRoot}"} \
+                  ${lib.optionalString (cfg.prometheusRoot != null) "--prometheus-root ${cfg.prometheusRoot}"} \
+                  --categories-file ${categoriesFileFormat.generate "categories.json" cfg.categories}
+              '';
+            };
+          };
+        });
     };
 }
