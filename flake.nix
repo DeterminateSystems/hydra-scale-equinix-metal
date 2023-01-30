@@ -45,11 +45,11 @@
 
       nixosModules.default = ({ config, lib, pkgs, ... }:
         let
-          cfg = config.services.hsem;
+          cfg = config.services.hydra-scale-equinix-metal;
           categoriesFileFormat = pkgs.formats.json { };
         in
         {
-          options.services.hsem = {
+          options.services.hydra-scale-equinix-metal = {
             enable = lib.mkEnableOption "hydra-scale-equinix-metal";
 
             secretFile = lib.mkOption {
@@ -84,7 +84,7 @@
           };
 
           config = lib.mkIf cfg.enable {
-            systemd.services.hsem = {
+            systemd.services.hydra-scale-equinix-metal = {
               wantedBy = [ "default.target" ];
               after = [ "network.target" ];
 
