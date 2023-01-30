@@ -36,12 +36,12 @@ pub struct HardwareCategory {
 
 type CategoryMap = HashMap<System, HashMap<JobSize, HardwareCategory>>;
 
-pub fn parse_categories_file(file: &Path) -> Result<CategoryMap> {
-    #[derive(Deserialize)]
-    struct Config {
-        category: CategoryMap,
-    }
+#[derive(Deserialize)]
+struct Config {
+    category: CategoryMap,
+}
 
+pub fn parse_categories_file(file: &Path) -> Result<CategoryMap> {
     let json_str = std::fs::read_to_string(file)?;
     let config: Config = serde_json::from_str(&json_str)?;
 
@@ -88,7 +88,7 @@ pub async fn get_desired_hardware(
                 let wanted = max(1, runnable / category.divisor);
                 if category.plans.is_empty() {
                     println!(
-                        "WARNING: {:?}/{:?}'s hardwarecategory is has no plans",
+                        "WARNING: {:?}/{:?}'s hardwarecategory has no plans",
                         system, size
                     );
 
@@ -98,7 +98,7 @@ pub async fn get_desired_hardware(
                 desired_hardware.extend(category.plans.iter().cycle().take(wanted).cloned());
             } else {
                 println!(
-                    "WARNING: {:?}/{:?} has no hardwarecategory is the hardware map",
+                    "WARNING: {:?}/{:?} has no hardwarecategory in the hardware map",
                     system, size
                 );
             }
