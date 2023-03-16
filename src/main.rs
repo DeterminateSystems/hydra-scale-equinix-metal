@@ -12,14 +12,6 @@ mod machine_type;
 #[derive(Parser, Debug)]
 #[clap(author, version)]
 struct Cli {
-    /// A comma-separated list of tags to apply to the created machines.
-    #[clap(long, required = true, value_delimiter = ',')]
-    tags: Vec<String>,
-
-    /// A comma-separated list of Equinix Metal facilities in which to create machines.
-    #[clap(long, required = true, value_delimiter = ',')]
-    facilities: Vec<String>,
-
     /// The root of the Hydra instance used as a basis for autoscaling.
     #[clap(long, default_value = "https://hydra.nixos.org")]
     hydra_root: String,
@@ -28,9 +20,10 @@ struct Cli {
     #[clap(long, default_value = "https://status.nixos.org/prometheus")]
     prometheus_root: String,
 
-    /// A TOML description of machines and their Nix system types and job sizes.
+    /// A JSON description of machines and their Nix system types and job sizes, and the tags and
+    /// facilities with which to create the machines.
     #[clap(long, required = true)]
-    categories_file: PathBuf,
+    config_file: PathBuf,
 }
 
 #[tokio::main]
@@ -45,11 +38,9 @@ async fn main() -> Result<()> {
     real_main(
         equinix_auth_token,
         equinix_project_id,
-        args.tags,
-        args.facilities,
         args.hydra_root,
         args.prometheus_root,
-        args.categories_file,
+        args.config_file,
     )
     .await
 }
@@ -57,11 +48,9 @@ async fn main() -> Result<()> {
 async fn real_main(
     equinix_auth_token: String,
     equinix_project_id: String,
-    tags: Vec<String>,
-    facilities: Vec<String>,
     hydra_root: String,
     prometheus_root: String,
-    categories_file: PathBuf,
+    config_file: PathBuf,
 ) -> Result<()> {
     let older_than = OffsetDateTime::now_utc() - time::Duration::DAY;
     let urgently_terminate = older_than - time::Duration::DAY;
@@ -78,7 +67,7 @@ async fn real_main(
     */
 
     let mut desired_hardware =
-        hardware::get_desired_hardware(&http_client, &hydra_root, &categories_file).await?;
+        hardware::get_desired_hardware(&http_client, &hydra_root, &config_file).await?;
 
     let mut all_devices: Vec<device::Device> =
         device::get_all_devices(&http_client, &equinix_auth_token, &equinix_project_id)
@@ -103,26 +92,26 @@ async fn real_main(
     let mut to_keep: Vec<device::Device> = vec![];
     for device in all_devices.into_iter() {
         // See if desired_hardware has a matching device
-        if let Some(idx) = desired_hardware.iter().position(|desired| {
+        if let Some(idx) = desired_hardware.plans.iter().position(|desired| {
             Some(&desired.netboot_url) == device.ipxe_script_url.as_ref()
                 && desired.plan == device.plan.class
         }) {
-            desired_hardware.swap_remove(idx);
+            desired_hardware.plans.swap_remove(idx);
             to_keep.push(device);
         } else {
             to_delete.push(device);
         }
     }
 
-    for desired in desired_hardware.iter() {
+    for desired in desired_hardware.plans.iter() {
         println!("Creating: {:#?}", desired);
         device::create_device(
             &http_client,
             &equinix_auth_token,
             &equinix_project_id,
             desired.clone(),
-            &tags,
-            &facilities,
+            &desired_hardware.tags,
+            &desired_hardware.facilities,
         )
         .await?;
     }
@@ -171,7 +160,7 @@ async fn real_main(
             dev.short_id, jobs, dev.plan.class, dev.ipxe_script_url
         );
     }
-    for dev in desired_hardware.iter() {
+    for dev in desired_hardware.plans.iter() {
         println!("+-------- 0 jobs {} {:?}", dev.plan, dev.netboot_url);
     }
 
