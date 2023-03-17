@@ -82,8 +82,6 @@
                 };
                 options.tags = lib.mkOption {
                   type = with lib.types; listOf str;
-                  default = [];
-                  apply = list: ["terraform-packet-nix-builder"] ++ list;
                   description = lib.mdDoc ''
                     The tags of the instances created.
                   '';

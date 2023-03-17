@@ -76,7 +76,8 @@ async fn real_main(
             .filter(|device| {
                 device
                     .tags
-                    .contains(&"terraform-packet-nix-builder".to_string())
+                    .iter()
+                    .all(|tag| desired_hardware.tags.contains(tag))
             })
             .filter(|device| device.device_type == device::DeviceType::SpotInstance)
             .collect();
