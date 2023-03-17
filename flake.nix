@@ -21,7 +21,7 @@
       });
     in
     {
-      devShell = forAllSystems ({ system, pkgs, ... }: self.packages.${system}.package.overrideAttrs ({ nativeBuildInputs ? [ ], ... }: {
+      devShell = forAllSystems ({ system, pkgs, ... }: self.packages.${system}.default.overrideAttrs ({ nativeBuildInputs ? [ ], ... }: {
         nativeBuildInputs = nativeBuildInputs ++ (with pkgs; [
           entr
           rustfmt
