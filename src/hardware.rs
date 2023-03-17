@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -29,8 +29,8 @@ pub struct HardwarePlan {
 #[derive(Clone, Debug, Deserialize)]
 pub struct HardwareCategory {
     pub divisor: usize,
-    #[allow(dead_code)] // "field `minimum` is never read"
     pub minimum: usize,
+    pub maximum: usize,
     pub plans: Vec<HardwarePlan>,
 }
 
@@ -85,7 +85,10 @@ pub async fn get_desired_hardware(
     for (system, sizes) in buckets.iter() {
         for (size, runnable) in sizes.iter() {
             if let Some(category) = categories.get(&system).and_then(|e| e.get(&size)) {
-                let wanted = max(1, runnable / category.divisor);
+                let wanted = min(
+                    category.maximum,
+                    max(category.minimum, runnable / category.divisor),
+                );
                 if category.plans.is_empty() {
                     println!(
                         "WARNING: {:?}/{:?}'s hardwarecategory has no plans",
