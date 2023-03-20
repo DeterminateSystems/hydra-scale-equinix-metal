@@ -21,15 +21,17 @@
       });
     in
     {
-      devShell = forAllSystems ({ system, pkgs, ... }: self.packages.${system}.default.overrideAttrs ({ nativeBuildInputs ? [ ], ... }: {
-        nativeBuildInputs = nativeBuildInputs ++ (with pkgs; [
-          entr
-          rustfmt
-          clippy
-          cargo
-          jq
-        ]);
-      }));
+      devShells = forAllSystems ({ system, pkgs, ... }: {
+        default = self.packages.${system}.default.overrideAttrs ({ nativeBuildInputs ? [ ], ... }: {
+          nativeBuildInputs = nativeBuildInputs ++ (with pkgs; [
+            entr
+            rustfmt
+            clippy
+            cargo
+            jq
+          ]);
+        });
+      });
 
       packages = forAllSystems
         ({ system, pkgs, ... }: {
@@ -46,7 +48,7 @@
       nixosModules.default = ({ config, lib, pkgs, ... }:
         let
           cfg = config.services.hydra-scale-equinix-metal;
-          categoriesFileFormat = pkgs.formats.json { };
+          configFileFormat = pkgs.formats.json { };
         in
         {
           options.services.hydra-scale-equinix-metal = {
@@ -60,14 +62,6 @@
               '';
             };
 
-            tags = lib.mkOption {
-              type = with lib.types; listOf str;
-            };
-
-            facilities = lib.mkOption {
-              type = with lib.types; listOf str;
-            };
-
             hydraRoot = lib.mkOption {
               type = with lib.types; nullOr str;
               default = null;
@@ -78,8 +72,24 @@
               default = null;
             };
 
-            categories = lib.mkOption {
-              inherit (categoriesFileFormat) type;
+            config = lib.mkOption {
+              type = lib.types.submodule {
+                options.facilities = lib.mkOption {
+                  type = with lib.types; listOf str;
+                  description = lib.mdDoc ''
+                    The facilities the instances are allowed to be created in.
+                  '';
+                };
+                options.tags = lib.mkOption {
+                  type = with lib.types; listOf str;
+                  description = lib.mdDoc ''
+                    The tags of the instances created.
+                  '';
+                };
+                options.categories = lib.mkOption {
+                  inherit (configFileFormat) type;
+                };
+              };
             };
           };
 
@@ -91,12 +101,10 @@
               script = ''
                 export $(xargs < ${cfg.secretFile})
 
-                ${self.packages.default}/bin/scale \
-                  --tags ${lib.concatStringsSep "," cfg.tags} \
-                  --facilities ${lib.concatStringsSep "," cfg.facilities} \
+                ${self.packages.${pkgs.stdenv.system}.default}/bin/scale \
                   ${lib.optionalString (cfg.hydraRoot != null) "--hydra-root ${cfg.hydraRoot}"} \
                   ${lib.optionalString (cfg.prometheusRoot != null) "--prometheus-root ${cfg.prometheusRoot}"} \
-                  --categories-file ${categoriesFileFormat.generate "categories.json" cfg.categories}
+                  --config-file ${configFileFormat.generate "config.json" cfg.config}
               '';
             };
           };

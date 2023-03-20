@@ -37,23 +37,32 @@ pub struct HardwareCategory {
 type CategoryMap = HashMap<System, HashMap<JobSize, HardwareCategory>>;
 
 #[derive(Deserialize)]
-struct Config {
+pub struct Config {
     category: CategoryMap,
+    tags: Vec<String>,
+    facilities: Vec<String>,
 }
 
-pub fn parse_categories_file(file: &Path) -> Result<CategoryMap> {
+pub struct DesiredHardwareConfig {
+    pub plans: Vec<HardwarePlan>,
+    pub tags: Vec<String>,
+    pub facilities: Vec<String>,
+}
+
+pub fn parse_config_file(file: &Path) -> Result<Config> {
     let json_str = std::fs::read_to_string(file)?;
     let config: Config = serde_json::from_str(&json_str)?;
 
-    Ok(config.category)
+    Ok(config)
 }
 
 pub async fn get_desired_hardware(
     http_client: &reqwest::Client,
     hydra_root: &str,
-    categories_file: &Path,
-) -> Result<Vec<HardwarePlan>> {
-    let categories = parse_categories_file(categories_file)?;
+    config_file: &Path,
+) -> Result<DesiredHardwareConfig> {
+    let config = parse_config_file(config_file)?;
+    let categories = config.category;
     let status = http_client
         .get(format!("{hydra_root}/queue-runner-status"))
         .header(ACCEPT, "application/json")
@@ -108,5 +117,14 @@ pub async fn get_desired_hardware(
         }
     }
 
-    Ok(desired_hardware)
+    let mut tags = config.tags;
+    tags.dedup();
+    let mut facilities = config.facilities;
+    facilities.dedup();
+
+    Ok(DesiredHardwareConfig {
+        plans: desired_hardware,
+        tags,
+        facilities,
+    })
 }
