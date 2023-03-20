@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::BTreeSet, path::PathBuf};
 
 use clap::Parser;
 use eyre::Result;
@@ -68,16 +68,15 @@ async fn real_main(
 
     let mut desired_hardware =
         hardware::get_desired_hardware(&http_client, &hydra_root, &config_file).await?;
+    let desired_tags = BTreeSet::from_iter(desired_hardware.tags.iter());
 
     let mut all_devices: Vec<device::Device> =
         device::get_all_devices(&http_client, &equinix_auth_token, &equinix_project_id)
             .await?
             .into_iter()
             .filter(|device| {
-                device
-                    .tags
-                    .iter()
-                    .all(|tag| desired_hardware.tags.contains(tag))
+                let device_tags = BTreeSet::from_iter(device.tags.iter());
+                device_tags.is_superset(&desired_tags)
             })
             .filter(|device| device.device_type == device::DeviceType::SpotInstance)
             .collect();
