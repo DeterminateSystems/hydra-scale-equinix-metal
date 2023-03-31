@@ -91,6 +91,14 @@
                 };
               };
             };
+
+            interval = lib.mkOption {
+              type = with lib.types; listOf str;
+              default = ["hourly"];
+              description = lib.mdDoc ''
+                The intervals at which to run (see `man systemd.time` for the format).
+              '';
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -98,14 +106,17 @@
               wantedBy = [ "default.target" ];
               after = [ "network.target" ];
 
-              script = ''
-                export $(xargs < ${cfg.secretFile})
-
-                ${self.packages.${pkgs.stdenv.system}.default}/bin/scale \
-                  ${lib.optionalString (cfg.hydraRoot != null) "--hydra-root ${cfg.hydraRoot}"} \
-                  ${lib.optionalString (cfg.prometheusRoot != null) "--prometheus-root ${cfg.prometheusRoot}"} \
-                  --config-file ${configFileFormat.generate "config.json" cfg.config}
-              '';
+              startAt = cfg.interval;
+              serviceConfig = {
+                EnvironmentFile = cfg.secretFile;
+                DynamicUser = true;
+                ExecStart = ''
+                  ${self.packages.${pkgs.stdenv.system}.default}/bin/scale
+                    ${lib.optionalString (cfg.hydraRoot != null) "--hydra-root ${cfg.hydraRoot}"}
+                    ${lib.optionalString (cfg.prometheusRoot != null) "--prometheus-root ${cfg.prometheusRoot}"}
+                    --config-file ${configFileFormat.generate "config.json" cfg.config}
+                '';
+              };
             };
           };
         });
