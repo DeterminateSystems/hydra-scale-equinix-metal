@@ -38,7 +38,7 @@ type CategoryMap = HashMap<System, HashMap<JobSize, HardwareCategory>>;
 
 #[derive(Deserialize)]
 pub struct Config {
-    category: CategoryMap,
+    categories: CategoryMap,
     tags: Vec<String>,
     facilities: Vec<String>,
 }
@@ -62,7 +62,7 @@ pub async fn get_desired_hardware(
     config_file: &Path,
 ) -> Result<DesiredHardwareConfig> {
     let config = parse_config_file(config_file)?;
-    let categories = config.category;
+    let categories = config.categories;
     let status = http_client
         .get(format!("{hydra_root}/queue-runner-status"))
         .header(ACCEPT, "application/json")
