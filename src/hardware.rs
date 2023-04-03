@@ -93,7 +93,7 @@ pub async fn get_desired_hardware(
     let mut desired_hardware: Vec<HardwarePlan> = vec![];
     for (system, sizes) in buckets.iter() {
         for (size, runnable) in sizes.iter() {
-            if let Some(category) = categories.get(&system).and_then(|e| e.get(&size)) {
+            if let Some(category) = categories.get(system).and_then(|e| e.get(size)) {
                 let wanted = min(
                     category.maximum,
                     max(category.minimum, runnable / category.divisor),

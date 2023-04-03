@@ -135,7 +135,7 @@ pub async fn destroy_device(
     if raw.status().is_success() {
         Ok(())
     } else {
-        return Err(eyre!(raw.json::<serde_json::Value>().await?));
+        Err(eyre!(raw.json::<serde_json::Value>().await?))
     }
 }
 
