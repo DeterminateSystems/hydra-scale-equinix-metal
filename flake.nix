@@ -111,9 +111,9 @@
                 EnvironmentFile = cfg.secretFile;
                 DynamicUser = true;
                 ExecStart = ''
-                  ${self.packages.${pkgs.stdenv.system}.default}/bin/scale
-                    ${lib.optionalString (cfg.hydraRoot != null) "--hydra-root ${cfg.hydraRoot}"}
-                    ${lib.optionalString (cfg.prometheusRoot != null) "--prometheus-root ${cfg.prometheusRoot}"}
+                  ${self.packages.${pkgs.stdenv.system}.default}/bin/scale \
+                    ${lib.optionalString (cfg.hydraRoot != null) "--hydra-root ${cfg.hydraRoot}"} \
+                    ${lib.optionalString (cfg.prometheusRoot != null) "--prometheus-root ${cfg.prometheusRoot}"} \
                     --config-file ${configFileFormat.generate "config.json" cfg.config}
                 '';
               };
