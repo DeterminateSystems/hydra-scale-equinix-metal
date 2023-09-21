@@ -33,7 +33,7 @@
         "minimum": 0,
         "plans": [
           {
-            "bid": 2.5,
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm",
             "plan": "c3.large.arm64"
           }
