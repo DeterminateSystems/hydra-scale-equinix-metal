@@ -28,13 +28,14 @@ pub struct HardwarePlan {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct HardwareCategory {
+    pub size: JobSize,
     pub divisor: usize,
     pub minimum: usize,
     pub maximum: usize,
     pub plans: Vec<HardwarePlan>,
 }
 
-type CategoryMap = HashMap<System, HashMap<JobSize, HardwareCategory>>;
+type CategoryMap = HashMap<System, Vec<HardwareCategory>>;
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -43,6 +44,7 @@ pub struct Config {
     facilities: Vec<String>,
 }
 
+#[derive(Debug)]
 pub struct DesiredHardwareConfig {
     pub plans: Vec<HardwarePlan>,
     pub tags: Vec<String>,
@@ -93,21 +95,25 @@ pub async fn get_desired_hardware(
     let mut desired_hardware: Vec<HardwarePlan> = vec![];
     for (system, sizes) in buckets.iter() {
         for (size, runnable) in sizes.iter() {
-            if let Some(category) = categories.get(system).and_then(|e| e.get(size)) {
-                let wanted = min(
-                    category.maximum,
-                    max(category.minimum, runnable / category.divisor),
-                );
-                if category.plans.is_empty() {
-                    println!(
-                        "WARNING: {:?}/{:?}'s hardwarecategory has no plans",
-                        system, size
-                    );
-
-                    continue;
+            if let Some(size_categories) = categories
+                .get(system)
+                .and_then(|cats| Some(cats.iter().filter(|cat| &cat.size == size)))
+            {
+                for category in size_categories {
+                    if category.plans.is_empty() {
+                        println!(
+                            "WARNING: {:?}/{:?}'s hardwarecategory has no plans",
+                            system, size
+                        );
+                    } else {
+                        let wanted = min(
+                            category.maximum,
+                            max(category.minimum, runnable / category.divisor),
+                        );
+                        desired_hardware
+                            .extend(category.plans.iter().cycle().take(wanted).cloned());
+                    }
                 }
-
-                desired_hardware.extend(category.plans.iter().cycle().take(wanted).cloned());
             } else {
                 println!(
                     "WARNING: {:?}/{:?} has no hardwarecategory in the hardware map",
