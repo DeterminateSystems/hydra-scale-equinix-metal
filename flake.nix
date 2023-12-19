@@ -42,6 +42,10 @@
             src = ./.;
 
             cargoLock.lockFile = ./Cargo.lock;
+
+            buildInputs = pkgs.lib.optionals (pkgs.stdenv.isDarwin) (with pkgs; [
+              darwin.apple_sdk.frameworks.SystemConfiguration
+            ]);
           };
         });
 
