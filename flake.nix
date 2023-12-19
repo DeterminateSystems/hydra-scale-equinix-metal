@@ -13,7 +13,7 @@
     let
       nameValuePair = name: value: { inherit name value; };
       genAttrs = names: f: builtins.listToAttrs (map (n: nameValuePair n (f n)) names);
-      allSystems = [ "x86_64-linux" "aarch64-linux" "i686-linux" "x86_64-darwin" ];
+      allSystems = [ "x86_64-linux" "aarch64-linux" "i686-linux" "x86_64-darwin" "aarch64-darwin" ];
 
       forAllSystems = f: genAttrs allSystems (system: f {
         inherit system;
@@ -42,6 +42,10 @@
             src = ./.;
 
             cargoLock.lockFile = ./Cargo.lock;
+
+            buildInputs = pkgs.lib.optionals (pkgs.stdenv.isDarwin) (with pkgs; [
+              darwin.apple_sdk.frameworks.SystemConfiguration
+            ]);
           };
         });
 

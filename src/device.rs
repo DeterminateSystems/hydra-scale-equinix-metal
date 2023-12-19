@@ -61,8 +61,8 @@ pub async fn create_device(
     equinix_auth_token: &str,
     equinix_project_id: &str,
     plan: HardwarePlan,
-    tags: &Vec<String>,
-    facilities: &Vec<String>,
+    tags: &[String],
+    facilities: &[String],
 ) -> Result<Device> {
     let raw = http_client
         .post(format!(
@@ -77,8 +77,8 @@ pub async fn create_device(
             plan: plan.plan,
             spot_instance: true,
             spot_price_max: plan.bid,
-            tags: tags.clone(),
-            facility: facilities.clone(),
+            tags: tags.to_vec(),
+            facility: facilities.to_vec(),
         })
         .header(ACCEPT, "application/json")
         .header(CONTENT_TYPE, "application/json")
