@@ -21,7 +21,7 @@ struct Cli {
     prometheus_root: String,
 
     /// A JSON description of machines and their Nix system types and job sizes, and the tags and
-    /// facilities with which to create the machines.
+    /// metros with which to create the machines.
     #[clap(long, required = true)]
     config_file: PathBuf,
 }
@@ -111,7 +111,7 @@ async fn real_main(
             &equinix_project_id,
             desired.clone(),
             &desired_hardware.tags,
-            &desired_hardware.facilities,
+            &desired_hardware.metros,
         )
         .await?;
     }
