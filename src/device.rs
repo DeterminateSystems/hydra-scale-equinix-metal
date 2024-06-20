@@ -46,7 +46,7 @@ pub struct Device {
 #[derive(Serialize, Debug)]
 struct CreateDeviceRequest {
     always_pxe: bool,
-    facility: Vec<String>,
+    metro: String,
     hostname: String,
     ipxe_script_url: String,
     operating_system: String,
@@ -62,7 +62,7 @@ pub async fn create_device(
     equinix_project_id: &str,
     plan: HardwarePlan,
     tags: &[String],
-    facilities: &[String],
+    metro: &str,
 ) -> Result<Device> {
     let raw = http_client
         .post(format!(
@@ -78,7 +78,7 @@ pub async fn create_device(
             spot_instance: true,
             spot_price_max: plan.bid,
             tags: tags.to_vec(),
-            facility: facilities.to_vec(),
+            metro: metro.into(),
         })
         .header(ACCEPT, "application/json")
         .header(CONTENT_TYPE, "application/json")
