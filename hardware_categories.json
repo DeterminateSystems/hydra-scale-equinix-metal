@@ -1,66 +1,89 @@
 {
-  "category": {
-    "aarch64-linux": {
-      "bigparallel": {
-        "divisor": 2000,
-        "minimum": 1,
+  "categories": {
+    "aarch64-linux": [
+      {
+        "divisor": 5,
         "maximum": 5,
+        "minimum": 1,
         "plans": [
           {
-            "bid": 2.0,
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm--big-parallel",
             "plan": "c3.large.arm64"
           }
-        ]
+        ],
+        "size": "bigparallel"
       },
-      "small": {
+      {
         "divisor": 2000,
-        "minimum": 1,
         "maximum": 5,
+        "minimum": 1,
         "plans": [
           {
-            "bid": 2.0,
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm",
             "plan": "c3.large.arm64"
           }
-        ]
-      }
-    },
-    "x86_64-linux": {
-      "bigparallel": {
-        "divisor": 2000,
-        "minimum": 1,
-        "maximum": 5,
+        ],
+        "size": "small"
+      },
+      {
+        "divisor": 5000,
+        "maximum": 1,
+        "minimum": 0,
         "plans": [
           {
-            "bid": 2.0,
+            "bid": 2,
+            "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-large-arm",
+            "plan": "c3.large.arm64"
+          }
+        ],
+        "size": "small"
+      }
+    ],
+    "x86_64-linux": [
+      {
+        "divisor": 5,
+        "maximum": 5,
+        "minimum": 1,
+        "plans": [
+          {
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86--big-parallel",
             "plan": "c3.medium.x86"
           },
           {
-            "bid": 2.0,
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86--big-parallel",
             "plan": "m3.large.x86"
           }
-        ]
+        ],
+        "size": "bigparallel"
       },
-      "small": {
+      {
         "divisor": 2000,
-        "minimum": 1,
         "maximum": 5,
+        "minimum": 1,
         "plans": [
           {
-            "bid": 2.0,
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/c3-medium-x86",
             "plan": "c3.medium.x86"
           },
           {
-            "bid": 2.0,
+            "bid": 2,
             "netboot_url": "https://netboot.nixos.org/dispatch/hydra/hydra.nixos.org/equinix-metal-builders/main/m3-large-x86",
             "plan": "m3.large.x86"
           }
-        ]
+        ],
+        "size": "small"
       }
-    }
-  }
+    ]
+  },
+  "facilities": [
+    "any"
+  ],
+  "tags": [
+    "hydra"
+  ]
 }
