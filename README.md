@@ -1,3 +1,5 @@
+Note: Equinix Metal is no longer available.
+ 
 # Equinix Metal autoscaler for Hydra
 
 This tool will query a Hydra instance for queue statistics and create
